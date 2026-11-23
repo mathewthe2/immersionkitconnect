@@ -1,0 +1,41 @@
+
+name: Build and Release
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'addon/__version__.py'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Get version from __version__.py
+        id: version
+        run: |
+          VERSION=$(python3 -c "exec(open('addon/__version__.py').read()); print(__version__)")
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Bundle
+        run: |
+          zip -r addon.zip . \
+            -x ".*" \
+            -x "__pycache__/*" \
+            -x README.md \
+            -x LICENSE \
+            -x "**/__pycache__/*" \
+            -x ".github/*"
+
+      - name: Create tag and GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.VERSION }}
+          name: v${{ steps.version.outputs.VERSION }}
+          files: ImmersionKitConnect.zip
+          generate_release_notes: true
